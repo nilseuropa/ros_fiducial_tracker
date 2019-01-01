@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fiducial_tracker</name>
+  <version>0.0.0</version>
+  <description>Fiducial robot tracking</description>
+
+  <maintainer email="marton@nowtech.hu">Marton Yuhaas</maintainer>
+
+  <license>BSD</license>
+
+  <author email="marton@nowtech.hu">Marton Yuhaas</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>tf</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>fiducial_msgs</depend>
+  <depend>visualization_msgs</depend>
+
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+</package>

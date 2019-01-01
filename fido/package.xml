@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fido</name>
+  <version>0.10.0</version>
+  <description>Fiducial robot tracking and ground truth odometry</description>
+
+  <author email="marton@nowtech.hu">Marton Yuhaas</author>
+  <maintainer email="marton@nowtech.hu">Marton Yuhaas</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>fiducial_tracker</exec_depend>
+  <exec_depend>fiducial_msgs</exec_depend>
+
+  <export>
+    <metapackage />
+  </export>
+</package>
