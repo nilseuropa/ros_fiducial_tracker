@@ -1,14 +1,12 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>fiducial_tracker</name>
-  <version>0.0.0</version>
+  <name>ros_fiducial_tracker</name>
+  <version>0.1.0</version>
   <description>Fiducial robot tracking</description>
 
-  <maintainer email="marton@nowtech.hu">Marton Yuhaas</maintainer>
+  <maintainer email="marton@neorobot.hu">Marton Juhasz</maintainer>
 
   <license>BSD</license>
-
-  <author email="marton@nowtech.hu">Marton Yuhaas</author>
 
   <buildtool_depend>catkin</buildtool_depend>
 

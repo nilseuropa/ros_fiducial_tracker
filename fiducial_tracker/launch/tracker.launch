@@ -1,0 +1,7 @@
+<launch>
+    <node name="fiducial_tracker" pkg="ros_fiducial_tracker" type="fiducial_tracker" output="screen">
+      <param name="ground_id"     value="0"/>
+      <param name="robot_id"      value="1"/>
+      <param name="odom_frame_id" value="base_link"/>
+    </node>
+</launch>

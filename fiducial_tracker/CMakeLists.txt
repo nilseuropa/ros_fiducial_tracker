@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 2.8.3)
-project(fiducial_tracker)
+project(ros_fiducial_tracker)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp

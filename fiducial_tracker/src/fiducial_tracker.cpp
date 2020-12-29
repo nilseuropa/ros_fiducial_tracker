@@ -9,7 +9,7 @@
 #include "fiducial_msgs/FiducialTransform.h"
 #include "fiducial_msgs/FiducialTransformArray.h"
 
-#include "fiducial_tracker/resetOrigin.h"
+#include "ros_fiducial_tracker/resetOrigin.h"
 
 ros::Publisher marker_pub;
 ros::Publisher odom_pub;
@@ -25,8 +25,8 @@ tf::Transform robot_TF;
 tf::Transform robot_TF_origo;
 
 bool originHasBeenSet = false;
-bool resetRobotOrigin(fiducial_tracker::resetOrigin::Request  &req,
-                      fiducial_tracker::resetOrigin::Response &res){
+bool resetRobotOrigin(ros_fiducial_tracker::resetOrigin::Request  &req,
+                      ros_fiducial_tracker::resetOrigin::Response &res){
   roboTransformOrigo = roboTransform;
   res.result = originHasBeenSet = req.resetOrigin;
   if (originHasBeenSet) ROS_INFO("Origin set.");
@@ -34,13 +34,19 @@ bool resetRobotOrigin(fiducial_tracker::resetOrigin::Request  &req,
   return true;
 }
 
+// TODO: marker TF
 void fiducialTransFormArrayUpdate(const fiducial_msgs::FiducialTransformArray &ftf_array){
   auto array_length = std::size(ftf_array.transforms);
-  if (array_length > 0){
-    for (uint8_t i = 0; i < array_length; i++){
-      if (ftf_array.transforms[i].fiducial_id == robot_id) {
+  if (array_length > 0)
+  {
+    for (uint8_t i = 0; i < array_length; i++)
+    {
+      if (ftf_array.transforms[i].fiducial_id == robot_id)
+      {
         roboTransform = ftf_array.transforms[i].transform;
-        if (originHasBeenSet){
+
+        if (originHasBeenSet)
+        {
           tf::transformMsgToTF(roboTransform,robot_TF);
           tf::transformMsgToTF(roboTransformOrigo,robot_TF_origo);
           tf::Transform dislocation = robot_TF_origo.inverseTimes(robot_TF);
@@ -77,6 +83,7 @@ void fiducialTransFormArrayUpdate(const fiducial_msgs::FiducialTransformArray &f
           odom.pose.pose.position.y  = odomTransform.translation.y;
           odom.pose.pose.position.z  = 0;
           odom.pose.pose.orientation = odomTransform.rotation;
+          // TODO: calculate velocities
 
           // publish the message
           odom_pub.publish(odom);
@@ -87,7 +94,7 @@ void fiducialTransFormArrayUpdate(const fiducial_msgs::FiducialTransformArray &f
 }
 
 int main(int argc, char ** argv) {
-    ros::init(argc, argv, "robot_tracker");
+    ros::init(argc, argv, "fiducial_tracker");
     ros::NodeHandle n;
     ros::Subscriber ftf_sub    = n.subscribe("/fiducial_transforms", 100, fiducialTransFormArrayUpdate);
     ros::ServiceServer service = n.advertiseService("/fiducial_tracker/reset_origin", resetRobotOrigin);
