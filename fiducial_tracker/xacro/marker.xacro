@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:macro name="aruco_marker" params="frame_id marker_id marker_length parent_link *origin">
+
+  <joint name="${frame_id}_joint" type="fixed">
+    <parent link="${parent_link}"/>
+    <child  link="${frame_id}"/>
+    <xacro:insert_block name="origin"/>
+  </joint>
+
+  <link name="${frame_id}">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 ${pi/2}"/>
+      <geometry>
+        <box size="${marker_length} ${marker_length} 0.004"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${marker_length} ${marker_length} 0.004"/>
+      </geometry>
+    </collision>
+  </link>
+  <gazebo reference="${frame_id}">
+    <material>ArucoMarker-${marker_id}</material>
+  </gazebo>
+
+</xacro:macro>
+
+</robot>

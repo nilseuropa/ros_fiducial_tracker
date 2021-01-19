@@ -1,6 +1,6 @@
 <launch>
   <!-- namespace for camera input -->
-  <arg name="camera" default="/camera"/>
+  <arg name="camera" default="head_camera"/>
   <arg name="image" default="image_rect"/>
   <arg name="transport" default="compressed"/>
   <arg name="fiducial_len" default="0.1"/>
@@ -22,7 +22,7 @@
     <remap from="/camera_info" to="$(arg camera)/camera_info"/>
   </node>
 
-  <node ns="camera" pkg="image_proc" type="image_proc" name="image_proc" />
+  <!-- <node ns="camera" pkg="image_proc" type="image_proc" name="image_proc" />
   <node name="camera" pkg="usb_cam" type="usb_cam_node" output="screen" >
     <param name="video_device" value="/dev/video0" />
     <param name="image_width" value="640" />
@@ -30,6 +30,6 @@
     <param name="pixel_format" value="yuyv" />
     <param name="io_method" value="mmap"/>
     <param name="framerate" value="30"/>
-  </node>
+  </node> -->
 
 </launch>
