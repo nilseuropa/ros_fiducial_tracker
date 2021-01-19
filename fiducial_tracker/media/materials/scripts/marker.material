@@ -1,3 +1,18 @@
+material ArucoMarker-0
+{
+    technique
+    {
+        pass
+        {
+            texture_unit
+            {
+                texture 4x4_1000-0.png
+                scale 1 1
+            }
+        }
+    }
+}
+
 material ArucoMarker-1
 {
     technique
