@@ -1,6 +1,9 @@
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/Transform.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Twist.h>
 #include <visualization_msgs/Marker.h>
 #include <nav_msgs/Odometry.h>
 
@@ -13,6 +16,7 @@
 
 ros::Publisher marker_pub;
 ros::Publisher odom_pub;
+ros::Publisher robot_twist_pub;
 
 int robot_id  = 0;
 int ground_id = 1;
@@ -22,9 +26,14 @@ std::string odom_frame_id;
 geometry_msgs::Transform roboTransform;
 geometry_msgs::Transform roboTransformOrigo;
 geometry_msgs::Transform odomTransform;
+geometry_msgs::Transform robotDisplacementTransform;
 
 tf::Transform robot_TF;
+tf::Transform robot_TF_prev;
 tf::Transform robot_TF_origo;
+
+geometry_msgs::Twist robot_twist; // With respect to origin
+ros::Time twist_timestamp;
 
 bool originHasBeenSet = false;
 bool resetRobotOrigin(ros_fiducial_tracker::resetOrigin::Request  &req,
@@ -37,14 +46,32 @@ bool resetRobotOrigin(ros_fiducial_tracker::resetOrigin::Request  &req,
 }
 
 void update_messages() {
+  static tf2_ros::TransformBroadcaster br_robot;
+  static tf2_ros::TransformBroadcaster br_origin;
   if (originHasBeenSet) {
     tf::transformMsgToTF(roboTransform, robot_TF);
+    tf::Transform robot_displacement = robot_TF.inverseTimes(robot_TF_prev);
+    robot_TF_prev = robot_TF;
     tf::transformMsgToTF(roboTransformOrigo, robot_TF_origo);
     tf::Transform dislocation = robot_TF_origo.inverseTimes(robot_TF);
     tf::transformTFToMsg(dislocation, odomTransform);
+    tf::transformTFToMsg(robot_displacement, robotDisplacementTransform);
     
-    //double robotHeading = tf::getYaw(odomTransform.rotation);
-    //tf::quaternionTFToMsg(tf::createQuaternionFromYaw(robotHeading),odomTransform.rotation);
+	geometry_msgs::TransformStamped transformStamped;
+	transformStamped.header.stamp = ros::Time::now();
+	transformStamped.header.frame_id = "world";
+	transformStamped.child_frame_id = "robot";
+	transformStamped.transform.translation.x = roboTransform.translation.x;
+	transformStamped.transform.translation.y = roboTransform.translation.y;
+	transformStamped.transform.translation.z = roboTransform.translation.z;
+	transformStamped.transform.rotation = roboTransform.rotation;
+	br_robot.sendTransform(transformStamped);
+	transformStamped.child_frame_id = "origin";
+	transformStamped.transform.translation.x = roboTransformOrigo.translation.x;
+	transformStamped.transform.translation.y = roboTransformOrigo.translation.y;
+	transformStamped.transform.translation.z = roboTransformOrigo.translation.z;
+	transformStamped.transform.rotation = roboTransformOrigo.rotation;
+	br_origin.sendTransform(transformStamped);
 
     // Visualization marker
     visualization_msgs::Marker points;
@@ -74,11 +101,19 @@ void update_messages() {
     odom.pose.pose.position.y  = odomTransform.translation.y;
     odom.pose.pose.position.z  = odomTransform.translation.z;
     odom.pose.pose.orientation = odomTransform.rotation;
-    // TODO: calculate velocities
+    
+    // Velocity
+    double twist_dt_sec = (odom.header.stamp-twist_timestamp).toSec();
+    //ROS_INFO_STREAM("DT = " << twist_dt_sec);
+    robot_twist.linear.x = robotDisplacementTransform.translation.x / twist_dt_sec;
+    robot_twist.linear.y = robotDisplacementTransform.translation.y / twist_dt_sec;
+    robot_twist.linear.z = robotDisplacementTransform.translation.z / twist_dt_sec;
+    twist_timestamp = odom.header.stamp;
 
     // Publish messages
     marker_pub.publish(points);
     odom_pub.publish(odom);
+    robot_twist_pub.publish(robot_twist);
   }
 }
 
@@ -96,8 +131,10 @@ void fiducialTransFormArrayUpdate(const fiducial_msgs::FiducialTransformArray &f
       }
     }
     // If ground marker is present, update its transform
+    bool update_required = false;
     if (ground_idx >= 0) {
       roboTransformOrigo = ftf_array.transforms[ground_idx].transform;
+      update_required = true;
       if (!originHasBeenSet) {
         originHasBeenSet = true;
         ROS_INFO_STREAM("Origin set using ground marker (ID = " << ground_id << ")");
@@ -105,10 +142,10 @@ void fiducialTransFormArrayUpdate(const fiducial_msgs::FiducialTransformArray &f
     }
     // If robot marker is present, update its transform and publish updated messages
     if (robot_idx >= 0) {
-      ROS_INFO("Robot marker is present");
+      update_required = true;
       roboTransform = ftf_array.transforms[robot_idx].transform;
-      update_messages();
     }
+    if (update_required) update_messages();
   }
 }
 
@@ -117,8 +154,10 @@ int main(int argc, char ** argv) {
     ros::NodeHandle n;
     ros::Subscriber ftf_sub    = n.subscribe("/fiducial_transforms", 100, fiducialTransFormArrayUpdate);
     ros::ServiceServer service = n.advertiseService("/fiducial_tracker/reset_origin", resetRobotOrigin);
-    odom_pub = n.advertise<nav_msgs::Odometry>("fiducial_tracker/odom", 50);
-    marker_pub = n.advertise<visualization_msgs::Marker>("fiducial_markers", 10);
+    odom_pub     = n.advertise<nav_msgs::Odometry>("fiducial_tracker/odom", 50);
+    marker_pub   = n.advertise<visualization_msgs::Marker>("fiducial_markers", 10);
+    robot_twist_pub = n.advertise<geometry_msgs::Twist>("fiducial_tracker/robot_twist", 50);
+    twist_timestamp = ros::Time::now();
 
     if (ros::param::get("~robot_id", robot_id)) {}
     else {
