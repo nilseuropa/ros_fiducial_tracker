@@ -92,7 +92,7 @@ void update_messages(ros::Time message_time)
 
     odom.header.frame_id = origin_frame_id;
     odom.header.stamp = message_time;
-    odom.child_frame_id = origin_frame_id; // !!!
+    odom.child_frame_id = robot_frame_id; // !!!
     odom.pose.pose.position.x  = odomTransform.translation.x;
     odom.pose.pose.position.y  = odomTransform.translation.y;
     odom.pose.pose.position.z  = odomTransform.translation.z;

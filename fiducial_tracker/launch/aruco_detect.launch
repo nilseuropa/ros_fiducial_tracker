@@ -3,7 +3,7 @@
   <arg name="camera" default="head_camera"/>
   <arg name="image" default="image_rect"/>
   <arg name="transport" default="compressed"/>
-  <arg name="fiducial_len" default="0.1"/>
+  <arg name="fiducial_len" default="0.04"/>
   <arg name="dictionary" default="0"/>
   <arg name="do_pose_estimation" default="true"/>
   <arg name="ignore_fiducials" default="" />

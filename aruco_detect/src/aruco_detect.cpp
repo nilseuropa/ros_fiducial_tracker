@@ -651,8 +651,6 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh)
     pnh.param<int>("perspectiveRemovePixelPerCell", detectorParams->perspectiveRemovePixelPerCell, 4);
     pnh.param<double>("polygonalApproxAccuracyRate", detectorParams->polygonalApproxAccuracyRate, 0.05);
 
-    //pnh.param<double>("fiducial_len", fiducial_len, 0.05);
-
     ROS_INFO("Aruco detection ready");
 }
 
