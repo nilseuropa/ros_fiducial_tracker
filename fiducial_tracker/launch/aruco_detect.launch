@@ -7,7 +7,7 @@
   <arg name="dictionary" default="0"/>
   <arg name="do_pose_estimation" default="true"/>
   <arg name="ignore_fiducials" default="" />
-  <arg name="fiducial_len_override" default="" />
+  <arg name="fiducial_len_override" default="0-16:0.04" /> <!-- id_range min-max: size [m] , id:size -->
 
   <node pkg="aruco_detect" name="aruco_detect" type="aruco_detect" output="screen">
     <param name="image_transport" value="$(arg transport)"/>

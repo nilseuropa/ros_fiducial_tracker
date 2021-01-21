@@ -396,7 +396,9 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr & msg)
               }
               return;
           }
+
           vector <double>reprojectionError;
+
           estimatePoseSingleMarkers((float)fiducial_len,
                                     cameraMatrix, distortionCoeffs,
                                     rvecs, tvecs,
@@ -597,9 +599,6 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh)
     img_sub = it.subscribe("camera", 1,
                         &FiducialsNode::imageCallback, this);
 
-    // vertices_sub = nh.subscribe("fiducial_vertices", 1,
-    //                 &FiducialsNode::poseEstimateCallback, this);
-
     caminfo_sub = nh.subscribe("camera_info", 1,
                     &FiducialsNode::camInfoCallback, this);
 
@@ -651,6 +650,8 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh)
     pnh.param<double>("perspectiveRemoveIgnoredMarginPerCell", detectorParams->perspectiveRemoveIgnoredMarginPerCell, 0.13);
     pnh.param<int>("perspectiveRemovePixelPerCell", detectorParams->perspectiveRemovePixelPerCell, 4);
     pnh.param<double>("polygonalApproxAccuracyRate", detectorParams->polygonalApproxAccuracyRate, 0.05);
+
+    //pnh.param<double>("fiducial_len", fiducial_len, 0.05);
 
     ROS_INFO("Aruco detection ready");
 }
