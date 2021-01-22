@@ -1,5 +1,4 @@
 <launch>
-  <!-- namespace for camera input -->
   <arg name="camera" default="head_camera"/>
   <arg name="image" default="image_rect"/>
   <arg name="transport" default="compressed"/>
@@ -9,7 +8,7 @@
   <arg name="ignore_fiducials" default="" />
   <arg name="fiducial_len_override" default="0-16:0.04" /> <!-- id_range min-max: size [m] , id:size -->
 
-  <node pkg="aruco_detect" name="aruco_detect" type="aruco_detect" output="screen">
+  <node pkg="ros_fiducial_tracker" name="aruco_detect" type="aruco_detect" output="screen">
     <param name="image_transport" value="$(arg transport)"/>
     <param name="publish_images" value="true" />
     <param name="fiducial_len" value="$(arg fiducial_len)"/>
@@ -22,15 +21,5 @@
         to="$(arg camera)/$(arg image)/$(arg transport)"/>
     <remap from="/camera_info" to="$(arg camera)/camera_info"/>
   </node>
-
-  <!-- <node ns="camera" pkg="image_proc" type="image_proc" name="image_proc" />
-  <node name="camera" pkg="usb_cam" type="usb_cam_node" output="screen" >
-    <param name="video_device" value="/dev/video0" />
-    <param name="image_width" value="640" />
-    <param name="image_height" value="480" />
-    <param name="pixel_format" value="yuyv" />
-    <param name="io_method" value="mmap"/>
-    <param name="framerate" value="30"/>
-  </node> -->
 
 </launch>

@@ -2,7 +2,7 @@
     <node name="fiducial_tracker" pkg="ros_fiducial_tracker" type="fiducial_tracker" output="screen">
 
       <param name="origin_id"       value="0"/>
-      <param name="robot_id"        value="1"/>
+      <param name="robot_id"        value="4"/>
 
       <param name="publish_markers" value="false"/>
       <param name="publish_fiducial_tf" value="true"/>

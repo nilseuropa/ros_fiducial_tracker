@@ -52,7 +52,7 @@
 #include "fiducial_msgs/FiducialArray.h"
 #include "fiducial_msgs/FiducialTransform.h"
 #include "fiducial_msgs/FiducialTransformArray.h"
-#include "aruco_detect/DetectorParamsConfig.h"
+#include "ros_fiducial_tracker/DetectorParamsConfig.h"
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/aruco.hpp>
@@ -619,8 +619,8 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh)
     pnh.param<double>("cornerRefinementMinAccuracy", detectorParams->cornerRefinementMinAccuracy, 0.01);
     pnh.param<int>("cornerRefinementWinSize", detectorParams->cornerRefinementWinSize, 5);
 
-    bool doCornerRefinement = false;
-    pnh.param<bool>("doCornerRefinement", doCornerRefinement, false);
+    bool doCornerRefinement = true;
+    pnh.param<bool>("doCornerRefinement", doCornerRefinement, true);
 
     if (doCornerRefinement)
     {
