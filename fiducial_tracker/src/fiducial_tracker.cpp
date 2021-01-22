@@ -27,6 +27,7 @@ bool publish_visualisation_markers = false;
 bool publish_fiducial_tf = true;
 
 geometry_msgs::Transform roboTransform;
+geometry_msgs::Transform roboTransformPrev;
 geometry_msgs::Transform roboTransformOrigo;
 geometry_msgs::Transform odomTransform;
 geometry_msgs::Transform robotDisplacementTransform;
@@ -43,15 +44,45 @@ bool originHasBeenSet  = false;
 bool originNeedsUpdate = false;
 
 bool resetRobotOrigin(ros_fiducial_tracker::resetOrigin::Request  &req,
-                      ros_fiducial_tracker::resetOrigin::Response &res) {
+                      ros_fiducial_tracker::resetOrigin::Response &res) 
+{
   roboTransformOrigo = roboTransform;
   res.result = originHasBeenSet = req.resetOrigin;
-  if (originHasBeenSet) {
+  if (originHasBeenSet) 
+  {
     originNeedsUpdate = true;
     ROS_INFO("Origin reset requested.");
   }
   else ROS_INFO("Origin dropped. Tracking disabled.");
   return true;
+}
+
+geometry_msgs::Vector3 update_angular_velocity(geometry_msgs::Quaternion q, geometry_msgs::Quaternion q0, double dt) 
+{
+  // Note: Maybe use tf::Quaternion and use built-in methods
+  // Calculate q-dot (time derivative of quaternion)
+  double w = q.w;
+  double x = q.x;
+  double y = q.y;
+  double z = q.z;
+  double dw = (w-q0.w)/dt;
+  double dx = (x-q0.x)/dt;
+  double dy = (y-q0.y)/dt;
+  double dz = (z-q0.z)/dt;
+  // Calculate omega (Qw) from q-dot and q
+  double denom = ((dw*dw)*(w*w) + 2*dw*w*(dx*x + dy*y) + (dx*x + dy*y)*(dx*x + dy*y) + (dz*dz)*((w*w) + (x*x) + (y*y)));
+  double Qwx = (-2*dz*(dw*dy*w - dx*dz*w + dx*dy*x + dw*dz*x + ((dy*dy) + (dz*dz))*y))/denom;  
+  double Qwy = (2*dz*(dw*dx*w + dy*dz*w + (dx*dx)*x + (dz*dz)*x + dx*dy*y - dw*dz*y))/denom;
+  double Qwz = (2*dz*((dw*dw)*w + dz*(dz*w - dy*x + dx*y) + dw*(dx*x + dy*y)))/denom;
+  // Rotate omega with q
+  Qwx =   y*(Qwz*w + Qwy*x - Qwx*y)  - z*(Qwy*w - Qwz*x + Qwx*z) + w*(Qwx*w + Qwz*y - Qwy*z) - x*(-(Qwx*x) - Qwy*y - Qwz*z);
+  Qwy = -(x*(Qwz*w + Qwy*x - Qwx*y)) + w*(Qwy*w - Qwz*x + Qwx*z) + z*(Qwx*w + Qwz*y - Qwy*z) - y*(-(Qwx*x) - Qwy*y - Qwz*z);
+  Qwz =   w*(Qwz*w + Qwy*x - Qwx*y)  + x*(Qwy*w - Qwz*x + Qwx*z) - y*(Qwx*w + Qwz*y - Qwy*z) - z*(-(Qwx*x) - Qwy*y - Qwz*z);
+  geometry_msgs::Vector3 omega;
+  omega.x = Qwx;
+  omega.y = Qwy;
+  omega.z = Qwz;
+  return omega;
 }
 
 void update_messages(ros::Time message_time)
@@ -65,7 +96,7 @@ void update_messages(ros::Time message_time)
 
     tf::transformMsgToTF(roboTransform, robot_TF);
     tf::Transform robot_displacement = robot_TF.inverseTimes(robot_TF_prev);
-    robot_TF_prev = robot_TF;
+    
     tf::transformMsgToTF(roboTransformOrigo, robot_TF_origo);
     tf::Transform dislocation = robot_TF_origo.inverseTimes(robot_TF);
     tf::transformTFToMsg(dislocation, odomTransform);
@@ -93,7 +124,11 @@ void update_messages(ros::Time message_time)
     }
 
     double twist_dt_sec = (message_time-twist_timestamp).toSec();
+    geometry_msgs::Vector3 omega = update_angular_velocity(roboTransform.rotation, roboTransformPrev.rotation, twist_dt_sec);
+    // Update "previous values" with current
     twist_timestamp = message_time;
+    robot_TF_prev = robot_TF;
+    roboTransformPrev = roboTransform;
 
     odom.header.frame_id = origin_frame_id;
     odom.header.stamp = message_time;
@@ -105,25 +140,28 @@ void update_messages(ros::Time message_time)
     odom.twist.twist.linear.x  = robotDisplacementTransform.translation.x / twist_dt_sec;
     odom.twist.twist.linear.y  = robotDisplacementTransform.translation.y / twist_dt_sec;
     odom.twist.twist.linear.z  = robotDisplacementTransform.translation.z / twist_dt_sec;
+    odom.twist.twist.angular.x = omega.x;
+    odom.twist.twist.angular.y = omega.y;
+    odom.twist.twist.angular.z = omega.z;
     odom_pub.publish(odom);
 
     if (publish_fiducial_tf)
     {
       geometry_msgs::TransformStamped transformStamped;
-    	transformStamped.header.stamp = message_time;
-    	transformStamped.header.frame_id = camera_frame_id;
-    	transformStamped.child_frame_id = robot_frame_id;
-    	transformStamped.transform.translation.x = roboTransform.translation.x;
-    	transformStamped.transform.translation.y = roboTransform.translation.y;
-    	transformStamped.transform.translation.z = roboTransform.translation.z;
-    	transformStamped.transform.rotation = roboTransform.rotation;
-    	broadcaster->sendTransform(transformStamped);
-    	transformStamped.child_frame_id = origin_frame_id;
-    	transformStamped.transform.translation.x = roboTransformOrigo.translation.x;
-    	transformStamped.transform.translation.y = roboTransformOrigo.translation.y;
-    	transformStamped.transform.translation.z = roboTransformOrigo.translation.z;
-    	transformStamped.transform.rotation = roboTransformOrigo.rotation;
-    	broadcaster->sendTransform(transformStamped);
+      transformStamped.header.stamp = message_time;
+      transformStamped.header.frame_id = camera_frame_id;
+      transformStamped.child_frame_id = robot_frame_id;
+      transformStamped.transform.translation.x = roboTransform.translation.x;
+      transformStamped.transform.translation.y = roboTransform.translation.y;
+      transformStamped.transform.translation.z = roboTransform.translation.z;
+      transformStamped.transform.rotation = roboTransform.rotation;
+      broadcaster->sendTransform(transformStamped);
+      transformStamped.child_frame_id = origin_frame_id;
+      transformStamped.transform.translation.x = roboTransformOrigo.translation.x;
+      transformStamped.transform.translation.y = roboTransformOrigo.translation.y;
+      transformStamped.transform.translation.z = roboTransformOrigo.translation.z;
+      transformStamped.transform.rotation = roboTransformOrigo.rotation;
+      broadcaster->sendTransform(transformStamped);
     }
 
   }
