@@ -39,13 +39,18 @@ tf2_ros::TransformBroadcaster* broadcaster = NULL;
 
 ros::Time twist_timestamp;
 
-bool originHasBeenSet = false;
+bool originHasBeenSet  = false;
+bool originNeedsUpdate = false;
+
 bool resetRobotOrigin(ros_fiducial_tracker::resetOrigin::Request  &req,
                       ros_fiducial_tracker::resetOrigin::Response &res) {
   roboTransformOrigo = roboTransform;
   res.result = originHasBeenSet = req.resetOrigin;
-  if (originHasBeenSet) ROS_INFO("Origin set.");
-  else ROS_INFO("Origin dropped.");
+  if (originHasBeenSet) {
+    originNeedsUpdate = true;
+    ROS_INFO("Origin reset requested.");
+  }
+  else ROS_INFO("Origin dropped. Tracking disabled.");
   return true;
 }
 
@@ -140,13 +145,10 @@ void fiducialTransFormArrayUpdate(const fiducial_msgs::FiducialTransformArray &f
     }
     // If ground marker is present, update its transform
     bool update_required = false;
-    if (origin_idx >= 0) {
+    if (origin_idx >= 0 && originNeedsUpdate) {
       roboTransformOrigo = ftf_array.transforms[origin_idx].transform;
-      update_required = true;
-      if (!originHasBeenSet) {
-        originHasBeenSet = true;
-        ROS_INFO_STREAM("Origin set using ground marker (ID = " << origin_id << ")");
-      }
+      originNeedsUpdate = false;
+      ROS_INFO_STREAM("Origin set using ground marker (ID = " << origin_id << ")");
     }
     // If robot marker is present, update its transform and publish updated messages
     if (robot_idx >= 0) {
@@ -181,7 +183,7 @@ int main(int argc, char ** argv)
     odom_pub = n.advertise<nav_msgs::Odometry>("/fiducial_tracker/odom", 50);
 
     twist_timestamp = ros::Time::now();
-    ROS_INFO("Waiting for robot origin or ground marker to appear...");
+    ROS_INFO("Waiting for reset_origin service call...");
     ros::spin();
     return 0;
 }
