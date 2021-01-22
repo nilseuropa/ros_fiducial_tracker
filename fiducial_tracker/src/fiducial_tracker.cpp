@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/Transform.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Twist.h>
@@ -17,15 +18,17 @@
 ros::Publisher marker_pub;
 ros::Publisher odom_pub;
 
-std::string origin_frame_id, camera_frame_id, robot_frame_id;
+std::string origin_frame_id, camera_frame_id, marker_frame_id, footprint_frame_id;
 std::string node_ns;
 
 int origin_id = 0;
 int robot_id  = 1;
-bool use_ground_marker = false;
+
 bool publish_visualisation_markers = false;
 bool publish_fiducial_tf = true;
+bool wait_for_urdf = false;
 
+geometry_msgs::Transform markerToFootprint;
 geometry_msgs::Transform roboTransform;
 geometry_msgs::Transform roboTransformOrigo;
 geometry_msgs::Transform odomTransform;
@@ -35,7 +38,7 @@ tf::Transform robot_TF;
 tf::Transform robot_TF_prev;
 tf::Transform robot_TF_origo;
 
-tf2_ros::TransformBroadcaster* broadcaster = NULL;
+tf2_ros::TransformBroadcaster* tf_broadcaster = NULL;
 
 ros::Time twist_timestamp;
 
@@ -97,7 +100,7 @@ void update_messages(ros::Time message_time)
 
     odom.header.frame_id = origin_frame_id;
     odom.header.stamp = message_time;
-    odom.child_frame_id = robot_frame_id; // !!!
+    odom.child_frame_id = marker_frame_id; // !!!
     odom.pose.pose.position.x  = odomTransform.translation.x;
     odom.pose.pose.position.y  = odomTransform.translation.y;
     odom.pose.pose.position.z  = odomTransform.translation.z;
@@ -112,18 +115,18 @@ void update_messages(ros::Time message_time)
       geometry_msgs::TransformStamped transformStamped;
     	transformStamped.header.stamp = message_time;
     	transformStamped.header.frame_id = camera_frame_id;
-    	transformStamped.child_frame_id = robot_frame_id;
+    	transformStamped.child_frame_id = marker_frame_id;
     	transformStamped.transform.translation.x = roboTransform.translation.x;
     	transformStamped.transform.translation.y = roboTransform.translation.y;
     	transformStamped.transform.translation.z = roboTransform.translation.z;
     	transformStamped.transform.rotation = roboTransform.rotation;
-    	broadcaster->sendTransform(transformStamped);
+    	tf_broadcaster->sendTransform(transformStamped);
     	transformStamped.child_frame_id = origin_frame_id;
     	transformStamped.transform.translation.x = roboTransformOrigo.translation.x;
     	transformStamped.transform.translation.y = roboTransformOrigo.translation.y;
     	transformStamped.transform.translation.z = roboTransformOrigo.translation.z;
     	transformStamped.transform.rotation = roboTransformOrigo.rotation;
-    	broadcaster->sendTransform(transformStamped);
+    	tf_broadcaster->sendTransform(transformStamped);
     }
 
   }
@@ -166,21 +169,47 @@ int main(int argc, char ** argv)
 
     ros::NodeHandle n;
     ros::NodeHandle nhLocal("~");
-    broadcaster = new(tf2_ros::TransformBroadcaster);
+
+    tf_broadcaster = new(tf2_ros::TransformBroadcaster);
+
+    tf2_ros::Buffer tf_buffer;
+    tf2_ros::TransformListener tf_listener(tf_buffer);
 
     nhLocal.param("origin_id", origin_id, 0);
     nhLocal.param("robot_id", robot_id, 1);
-    nhLocal.param("odom_frame", origin_frame_id, std::string("origin"));
+    nhLocal.param("odom_frame", origin_frame_id, std::string("odom"));
     nhLocal.param("camera_frame", camera_frame_id, std::string("camera"));
-    nhLocal.param("robot_frame", robot_frame_id, std::string("robot"));
+    nhLocal.param("marker_frame", marker_frame_id, std::string("marker"));
+    nhLocal.param("footprint_frame", footprint_frame_id, std::string("base_footprint"));
     nhLocal.param("publish_markers", publish_visualisation_markers, false);
     nhLocal.param("publish_fiducial_tf", publish_fiducial_tf, true);
+    nhLocal.param("marker_to_footprint_from_urdf", wait_for_urdf, false);
 
     ros::Subscriber ftf_sub    = n.subscribe("/fiducial_transforms", 100, fiducialTransFormArrayUpdate);
     ros::ServiceServer service = n.advertiseService("/fiducial_tracker/reset_origin", resetRobotOrigin);
 
     if (publish_visualisation_markers) marker_pub = n.advertise<visualization_msgs::Marker>("/fiducial_markers", 10);
     odom_pub = n.advertise<nav_msgs::Odometry>("/fiducial_tracker/odom", 50);
+
+    if (wait_for_urdf)
+    {
+      while (n.ok())
+      {
+         geometry_msgs::TransformStamped transformStamped;
+         try
+         {
+           transformStamped = tf_buffer.lookupTransform(marker_frame_id, footprint_frame_id, ros::Time(0));
+           markerToFootprint = transformStamped.transform;
+           ROS_INFO_STREAM("Got " << marker_frame_id << " to " << footprint_frame_id << " from URDF.");
+           break;
+         }
+         catch (tf2::TransformException &ex) {
+           ROS_WARN("%s",ex.what());
+           ros::Duration(1.0).sleep();
+           continue;
+         }
+      }
+    }
 
     twist_timestamp = ros::Time::now();
     ROS_INFO("Waiting for reset_origin service call...");
