@@ -1,18 +1,28 @@
 <launch>
+
+    <arg name="origin_id"     default="0"/>
+    <arg name="robot_id"      default="1"/>
+    <arg name="publish_tf"    default="true"/>
+    <arg name="odom_frame"    default="odom"/>
+    <arg name="camera_frame"  default="head_camera"/>
+    <arg name="marker_frame"  default="marker"/>
+    <arg name="use_urdf"      default="false"/>
+    <arg name="footprint_frame"  default="base_footprint"/>
+
     <node name="fiducial_tracker" pkg="ros_fiducial_tracker" type="fiducial_tracker" output="screen">
 
-      <param name="origin_id"       value="0"/>
-      <param name="robot_id"        value="4"/>
+      <param name="origin_id"       value="$(arg origin_id)"/>
+      <param name="robot_id"        value="$(arg robot_id)"/>
 
       <param name="publish_markers" value="false"/>
-      <param name="publish_fiducial_tf" value="true"/>
+      <param name="publish_fiducial_tf" value="$(arg publish_tf)"/>
 
-      <param name="odom_frame"      value="odom"/>
-      <param name="camera_frame"    value="head_camera"/>
-      <param name="marker_frame"    value="marker"/>
+      <param name="odom_frame"      value="$(arg odom_frame)"/>
+      <param name="camera_frame"    value="$(arg camera_frame)"/>
+      <param name="marker_frame"    value="$(arg marker_frame)"/>
 
-      <param name="marker_to_footprint_from_urdf" value="false"/>
-      <param name="footprint_frame" value="base_footprint"/>
+      <param name="marker_to_footprint_from_urdf" value="$(arg use_urdf)"/>
+      <param name="footprint_frame" value="$(arg footprint_frame)"/>
 
     </node>
 </launch>

@@ -1,11 +1,16 @@
 <launch>
-  <node ns="head_camera" pkg="image_proc" type="image_proc" name="image_proc" />
-  <node name="head_camera" pkg="usb_cam" type="usb_cam_node" output="screen" >
+
+  <arg name="cam_name" default="head_camera"/>
+
+  <node ns="$(arg cam_name)" pkg="image_proc" type="image_proc" name="image_proc" />
+
+  <node name="$(arg cam_name)" pkg="usb_cam" type="usb_cam_node" output="screen" >
     <param name="video_device" value="/dev/video0" />
     <param name="image_width" value="640" />
     <param name="image_height" value="480" />
     <param name="pixel_format" value="yuyv" />
     <param name="io_method" value="mmap"/>
-    <param name="framerate" value="30"/>
+    <param name="framerate" value="120"/>
   </node>
+
 </launch>
