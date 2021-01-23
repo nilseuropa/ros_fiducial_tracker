@@ -2,7 +2,8 @@
 
     <arg name="origin_id"     default="0"/>
     <arg name="robot_id"      default="1"/>
-    <arg name="publish_tf"    default="true"/>
+    <arg name="fiducial_tf"   default="false"/> <!-- cam to origin and marker tf -->
+    <arg name="odom_tf"       default="true"/> <!-- origin to marker/footprint tf -->
     <arg name="odom_frame"    default="odom"/>
     <arg name="camera_frame"  default="head_camera"/>
     <arg name="marker_frame"  default="marker"/>
@@ -15,7 +16,8 @@
       <param name="robot_id"        value="$(arg robot_id)"/>
 
       <param name="publish_markers" value="false"/>
-      <param name="publish_fiducial_tf" value="$(arg publish_tf)"/>
+      <param name="publish_fiducial_tf" value="$(arg fiducial_tf)"/>
+      <param name="publish_odom_tf" value="$(arg odom_tf)"/>
 
       <param name="odom_frame"      value="$(arg odom_frame)"/>
       <param name="camera_frame"    value="$(arg camera_frame)"/>
