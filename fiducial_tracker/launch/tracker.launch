@@ -15,7 +15,6 @@
       <param name="origin_id"       value="$(arg origin_id)"/>
       <param name="robot_id"        value="$(arg robot_id)"/>
 
-      <param name="publish_markers" value="false"/>
       <param name="publish_fiducial_tf" value="$(arg fiducial_tf)"/>
       <param name="publish_odom_tf" value="$(arg odom_tf)"/>
 
