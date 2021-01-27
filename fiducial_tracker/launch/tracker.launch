@@ -9,6 +9,7 @@
     <arg name="marker_frame"  default="marker"/>
     <arg name="use_urdf"      default="false"/>
     <arg name="footprint_frame"  default="base_footprint"/>
+    <arg name="2d_tracking"   default="false"/>
 
     <node name="fiducial_tracker" pkg="ros_fiducial_tracker" type="fiducial_tracker" output="screen">
 
@@ -24,6 +25,7 @@
 
       <param name="marker_to_footprint_from_urdf" value="$(arg use_urdf)"/>
       <param name="footprint_frame" value="$(arg footprint_frame)"/>
+      <param name="planar_tracking" value="$(arg 2d_tracking)"/>
 
     </node>
 </launch>

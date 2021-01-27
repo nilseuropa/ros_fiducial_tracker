@@ -27,6 +27,8 @@ bool publish_fiducial_tf = true;
 bool publish_odom_tf = false;
 bool publish_odometry = true;
 bool marker_to_footprint_from_urdf = false;
+bool planar_tracking = false;
+double planar_tracking_z_level = 0.0;
 
 geometry_msgs::Transform markerToFootprint;
 geometry_msgs::Transform markerToCamera;
@@ -136,6 +138,12 @@ void update_messages(ros::Time message_time)
       odom.twist.twist.angular.x = omega.x;
       odom.twist.twist.angular.y = omega.y;
       odom.twist.twist.angular.z = omega.z;
+      if (planar_tracking) {
+        odom.pose.pose.position.z  = planar_tracking_z_level;
+        odom.twist.twist.linear.z  = 0.0;
+        odom.twist.twist.angular.x = 0.0;
+        odom.twist.twist.angular.y = 0.0;
+      }
       odom_pub.publish(odom);
     }
 
@@ -149,6 +157,9 @@ void update_messages(ros::Time message_time)
       transformStamped.transform.translation.y = odomTransform.translation.y;
       transformStamped.transform.translation.z = odomTransform.translation.z;
       transformStamped.transform.rotation = odomTransform.rotation;
+      if (planar_tracking) {
+        transformStamped.transform.translation.z = planar_tracking_z_level;
+      }
       tf_broadcaster->sendTransform(transformStamped);
     }
     else if (publish_fiducial_tf)
@@ -163,6 +174,9 @@ void update_messages(ros::Time message_time)
       transformStamped.transform.translation.y = markerToCamera.translation.y;
       transformStamped.transform.translation.z = markerToCamera.translation.z;
       transformStamped.transform.rotation = markerToCamera.rotation;
+      if (planar_tracking) {
+        transformStamped.transform.translation.z = planar_tracking_z_level;
+      }
       tf_broadcaster->sendTransform(transformStamped);
 
       transformStamped.child_frame_id = origin_frame_id;
@@ -193,8 +207,9 @@ void fiducialTransFormArrayUpdate(const fiducial_msgs::FiducialTransformArray &f
     // If ground marker is present, update its transform
     bool update_required = false;
     if (origin_idx >= 0 && originNeedsUpdate) {
-      transformOrigin = ftf_array.transforms[origin_idx].transform;
       originNeedsUpdate = false;
+      transformOrigin = ftf_array.transforms[origin_idx].transform;
+      planar_tracking_z_level = transformOrigin.translation.z;
       ROS_INFO_STREAM("Origin set using ground marker (ID = " << origin_id << ")");
       trackingEnabled = true;
     }
@@ -203,6 +218,7 @@ void fiducialTransFormArrayUpdate(const fiducial_msgs::FiducialTransformArray &f
       if (originNeedsUpdate) {
         originNeedsUpdate = false;
         transformOrigin = markerToCamera;
+        planar_tracking_z_level = transformOrigin.translation.z;
         ROS_INFO_STREAM("Origin set using robot marker (ID = " << robot_id << ")");
         trackingEnabled = true;
       }
@@ -236,6 +252,7 @@ int main(int argc, char ** argv)
     nhLocal.param("publish_odom_tf", publish_odom_tf, false);
     nhLocal.param("publish_odometry", publish_odometry, true);
     nhLocal.param("marker_to_footprint_from_urdf", marker_to_footprint_from_urdf, false);
+    nhLocal.param("planar_tracking", planar_tracking, false);
 
     ros::Subscriber ftf_sub    = n.subscribe("/fiducial_transforms", 100, fiducialTransFormArrayUpdate);
     ros::ServiceServer service = n.advertiseService("/fiducial_tracker/reset_origin", resetRobotOrigin);
