@@ -42,7 +42,7 @@ tf::Transform marker_to_cam_prev;
 tf::Transform transform_origin_tf;
 tf::Transform marker_to_footprint_tf;
 
-tf2_ros::TransformBroadcaster* tf_broadcaster = NULL;
+tf2_ros::TransformBroadcaster* tf_broadcaster = nullptr;
 
 ros::Time twist_timestamp;
 
@@ -103,7 +103,7 @@ void update_messages(ros::Time message_time)
     if (marker_to_footprint_from_urdf)
     {
       tf::transformMsgToTF(markerToFootprint, marker_to_footprint_tf);
-      marker_to_cam = marker_to_cam.inverseTimes(marker_to_footprint_tf);
+      marker_to_cam.mult(marker_to_cam, marker_to_footprint_tf);
     }
 
     tf::Transform marker_displacement_tf = marker_to_cam.inverseTimes(marker_to_cam_prev); // between two frames for velocity report
@@ -139,10 +139,14 @@ void update_messages(ros::Time message_time)
       odom.twist.twist.angular.y = omega.y;
       odom.twist.twist.angular.z = omega.z;
       if (planar_tracking) {
+        // Fixed Z position
         odom.pose.pose.position.z  = planar_tracking_z_level;
+        // X-Y planar velocities only
         odom.twist.twist.linear.z  = 0.0;
         odom.twist.twist.angular.x = 0.0;
         odom.twist.twist.angular.y = 0.0;
+        // Yaw only
+        tf::quaternionTFToMsg(tf::createQuaternionFromYaw(tf::getYaw(odomTransform.rotation)), odom.pose.pose.orientation);
       }
       odom_pub.publish(odom);
     }
@@ -158,7 +162,10 @@ void update_messages(ros::Time message_time)
       transformStamped.transform.translation.z = odomTransform.translation.z;
       transformStamped.transform.rotation = odomTransform.rotation;
       if (planar_tracking) {
+        // Fixed Z position
         transformStamped.transform.translation.z = planar_tracking_z_level;
+        // Yaw only
+        tf::quaternionTFToMsg(tf::createQuaternionFromYaw(tf::getYaw(odomTransform.rotation)), transformStamped.transform.rotation);
       }
       tf_broadcaster->sendTransform(transformStamped);
     }
@@ -175,7 +182,10 @@ void update_messages(ros::Time message_time)
       transformStamped.transform.translation.z = markerToCamera.translation.z;
       transformStamped.transform.rotation = markerToCamera.rotation;
       if (planar_tracking) {
+        // Fixed Z position
         transformStamped.transform.translation.z = planar_tracking_z_level;
+        // Yaw only
+        tf::quaternionTFToMsg(tf::createQuaternionFromYaw(tf::getYaw(markerToCamera.rotation)), transformStamped.transform.rotation);
       }
       tf_broadcaster->sendTransform(transformStamped);
 
@@ -209,7 +219,7 @@ void fiducialTransFormArrayUpdate(const fiducial_msgs::FiducialTransformArray &f
     if (origin_idx >= 0 && originNeedsUpdate) {
       originNeedsUpdate = false;
       transformOrigin = ftf_array.transforms[origin_idx].transform;
-      planar_tracking_z_level = transformOrigin.translation.z;
+      planar_tracking_z_level = 0.0; 
       ROS_INFO_STREAM("Origin set using ground marker (ID = " << origin_id << ")");
       trackingEnabled = true;
     }
@@ -218,7 +228,7 @@ void fiducialTransFormArrayUpdate(const fiducial_msgs::FiducialTransformArray &f
       if (originNeedsUpdate) {
         originNeedsUpdate = false;
         transformOrigin = markerToCamera;
-        planar_tracking_z_level = transformOrigin.translation.z;
+        planar_tracking_z_level = 0.0; 
         ROS_INFO_STREAM("Origin set using robot marker (ID = " << robot_id << ")");
         trackingEnabled = true;
       }
