@@ -7,7 +7,7 @@
     <arg name="odom_frame"    default="odom"/>
     <arg name="camera_frame"  default="head_camera"/>
     <arg name="marker_frame"  default="marker"/>
-    <arg name="use_urdf"      default="false"/>
+    <arg name="use_urdf"      default="true"/>
     <arg name="footprint_frame"  default="base_footprint"/>
     <arg name="2d_tracking"   default="false"/>
 

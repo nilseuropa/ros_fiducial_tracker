@@ -274,29 +274,29 @@ int main(int argc, char ** argv)
     if (marker_to_footprint_from_urdf) {
       uint16_t tf_give_up_counter = 10;
       while (n.ok()) {
-         geometry_msgs::TransformStamped transformStamped;
-         try {
-           transformStamped = tf_buffer.lookupTransform(marker_frame_id, footprint_frame_id, ros::Time(0));
-           markerToFootprint = transformStamped.transform;
-           ROS_INFO_STREAM("Got " << marker_frame_id << " to " << footprint_frame_id
-            << " [X: "  << markerToFootprint.translation.x
-            << "] [Y: " << markerToFootprint.translation.y
-            << "] [Z: " << markerToFootprint.translation.z << "]"
+        geometry_msgs::TransformStamped transformStamped;
+        try {
+          transformStamped = tf_buffer.lookupTransform(marker_frame_id, footprint_frame_id, ros::Time(0));
+          markerToFootprint = transformStamped.transform;
+          ROS_INFO_STREAM("Got " << marker_frame_id << " to " << footprint_frame_id
+           << " [X: "  << markerToFootprint.translation.x
+           << "] [Y: " << markerToFootprint.translation.y
+           << "] [Z: " << markerToFootprint.translation.z << "]"
           );
-           break;
-         }
-         catch (tf2::TransformException &ex) {
-           tf_give_up_counter--;
-           if (tf_give_up_counter == 0) {
-             ROS_ERROR_STREAM("Waiting for " << marker_frame_id << " to " << footprint_frame_id << " has timed out.");
-             footprint_frame_id = marker_frame_id;
-             marker_to_footprint_from_urdf = false;
-             break;
-           }
-           ROS_WARN_STREAM(ex.what() << " Retrires left: " << tf_give_up_counter);
-           ros::Duration(1.0).sleep();
-           continue;
-         }
+          break;
+        }
+        catch (tf2::TransformException &ex) {
+          tf_give_up_counter--;
+          if (tf_give_up_counter == 0) {
+            ROS_ERROR_STREAM("Waiting for " << marker_frame_id << " to " << footprint_frame_id << " has timed out.");
+            footprint_frame_id = marker_frame_id;
+            marker_to_footprint_from_urdf = false;
+            break;
+          }
+          ROS_WARN_STREAM(ex.what() << " Retrires left: " << tf_give_up_counter);
+          ros::Duration(1.0).sleep();
+          continue;
+        }
       }
     }
     else {
